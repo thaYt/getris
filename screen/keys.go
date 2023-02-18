@@ -3,6 +3,7 @@ package screen
 import (
 	"fmt"
 	"thaYt/getris/global"
+	"thaYt/getris/states"
 
 	"github.com/veandco/go-sdl2/sdl"
 )
@@ -20,7 +21,7 @@ func HandleKey(number int) {
 		sdl.GLSetSwapInterval(global.Vsync)
 	}
 	switch global.CurrentMenu {
-	case global.TitleScreen:
+	case states.TitleScreen:
 		switch number {
 		case 41:
 			global.Running = false
@@ -36,12 +37,12 @@ func HandleKey(number int) {
 			selected := titleOpt % 2
 			switch selected {
 			case 0:
-				global.CurrentMenu = global.GameScreen
+				global.CurrentMenu = states.GameScreen
 			case 1:
-				global.CurrentMenu = global.InfoScreen
+				global.CurrentMenu = states.InfoScreen
 			}
 		}
-	case global.GameScreen:
+	case states.GameScreen:
 		switch number {
 		case 82: // up | rotate
 			rotatePiece()
@@ -54,15 +55,16 @@ func HandleKey(number int) {
 		case 44: // space | hard drop
 			reDrop()
 		case 225, 229: // l/r shift | hold piece
+			holdPiece()
 		case 41:
-			global.CurrentMenu = global.DeathScreen
+			global.CurrentMenu = states.DeathScreen
 		}
-	case global.DeathScreen:
+	case states.DeathScreen:
 		switch number {
 		case 44, 40, 41:
-			global.CurrentMenu = global.TitleScreen
+			global.CurrentMenu = states.TitleScreen
 		}
-	case global.InfoScreen:
-		global.CurrentMenu = global.TitleScreen
+	case states.InfoScreen:
+		global.CurrentMenu = states.TitleScreen
 	}
 }

@@ -1,4 +1,4 @@
-package global
+package states
 
 const (
 	TitleScreen = 0

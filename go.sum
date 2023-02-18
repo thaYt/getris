@@ -1,10 +1,2 @@
-github.com/hashicorp/errwrap v1.0.0 h1:hLrqtEDnRye3+sgx6z4qVLNuviH3MR5aQ0ykNJa/UYA=
-github.com/hashicorp/errwrap v1.0.0/go.mod h1:YH+1FKiLXxHSkmPseP+kNlulaMuP3n2brvKWEqk/Jc4=
-github.com/hashicorp/go-multierror v1.1.1 h1:H5DkEtf6CXdFp0N0Em5UCwQpXMWke8IA0+lD48awMYo=
-github.com/hashicorp/go-multierror v1.1.1/go.mod h1:iw975J/qwKPdAO1clOe2L8331t/9/fmwbPZ6JB6eMoM=
-github.com/teamwork/try v0.0.0-20200108115428-b2edf0c4e782 h1:p/Kaxmuw1JOwDc9jmai767H8OgDalcwpmsB58cAOBLA=
-github.com/teamwork/try v0.0.0-20200108115428-b2edf0c4e782/go.mod h1:RXTzKn/r3edL+8OiW9PycQM8UEEnH1YaYI++u+dKlpc=
-github.com/veandco/go-sdl2 v0.4.29 h1:YjqquD+q3E4o1zJ6fTLZTcqA/c4Efy9Tgqw+LLxUNdw=
-github.com/veandco/go-sdl2 v0.4.29/go.mod h1:OROqMhHD43nT4/i9crJukyVecjPNYYuCofep6SNiAjY=
 github.com/veandco/go-sdl2 v0.4.33 h1:cxQ0OdUBEByHxvCyrGxy9F8WpL38Ya6hzV4n27QL84M=
 github.com/veandco/go-sdl2 v0.4.33/go.mod h1:OROqMhHD43nT4/i9crJukyVecjPNYYuCofep6SNiAjY=

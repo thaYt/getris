@@ -3,18 +3,26 @@ package screen
 import (
 	"math/rand"
 	"thaYt/getris/global"
+	"thaYt/getris/pieces"
+	"thaYt/getris/states"
 	_ "time"
 )
 
 var (
-	Board         [10][20]piece
-	SecondDrop    = 1.0
+	board         [10][20]piece
+	dropTime      = 0.75
 	Score         int64
 	dropped       bool
-	DroppingPiece bool
-	level         int32
+	droppingPiece bool
 	fullDrop      bool
 	dropInf       dropPosition
+	toDrop        []int
+	holdingPiece  bool
+	currentPiece  int
+	heldPiece     int
+	dynScore      int
+	level         int32
+	rotations     int
 )
 
 type piece struct {
@@ -23,28 +31,23 @@ type piece struct {
 }
 
 type dropPosition struct {
-	x int
-	y int
-	w int
-	h int
-}
-
-func PlayGame() {
+	x, y, w, h int
 }
 
 func renderGame() {
-	for alen, a := range Board {
+	for alen, a := range board {
 		for blen, b := range a {
-			// c := Board[alen][blen]
 			if b.id != 0 {
-				drawRectPiece(alen, blen, int32(b.id), b)
+				drawRectPiece(alen, blen, int32(b.id))
+			} else if b.dropping {
+				drawRectPieceGrayscale(alen, blen)
 			}
 		}
 	}
 }
 
 func renderGameGrayscale() {
-	for alen, a := range Board {
+	for alen, a := range board {
 		for blen, b := range a {
 			if b.id != 0 {
 				drawRectPieceGrayscale(alen, blen)
@@ -53,16 +56,28 @@ func renderGameGrayscale() {
 	}
 }
 
+func checkScore() {
+	if dynScore >= 1000 {
+		dynScore -= 1000
+		upLevel()
+	}
+}
+
 func upLevel() {
-	if SecondDrop == 0.5 {
+	if dropTime == 0.1 {
 		return
 	}
-	SecondDrop -= 0.1
+	dropTime -= 0.05
 	level++
 }
 
 func dropPiece() {
 	dropped = true
+}
+
+func incScore(a int) {
+	dynScore += a
+	Score += int64(a)
 }
 
 func reDrop() {
@@ -71,35 +86,34 @@ func reDrop() {
 }
 
 func checkLineCleared() {
-	if !DroppingPiece {
+	if !droppingPiece {
 		var lines []int
 		var aPieces [][]piece
-		for j := 0; j < len(Board[0]); j++ {
-			line := []piece{}
-			for i := 0; i < len(Board); i++ {
-				if Board[i][j].id != 0 {
-					line = append(line, Board[i][j])
+		for j := 0; j < len(board[0]); j++ {
+			var line []piece
+			for i := 0; i < len(board); i++ {
+				if board[i][j].id != 0 {
+					line = append(line, board[i][j])
 				}
 			}
 			if len(line) == 10 {
+				incScore(100)
 				lines = append(lines, j)
 			}
 		}
 
-		Score += 100 * int64(len(aPieces))
-
 		for _, line := range lines {
-			for i := range Board {
-				if Board[i][line].id != 0 {
-					Board[i][line].id = 0
+			for i := range board {
+				if board[i][line].id != 0 {
+					board[i][line].id = 0
 				}
 			}
 		}
 
-		for j := 0; j < len(Board[0]); j++ {
-			line := []piece{}
-			for i := 0; i < len(Board); i++ {
-				line = append(line, Board[i][j])
+		for j := 0; j < len(board[0]); j++ {
+			var line []piece
+			for i := 0; i < len(board); i++ {
+				line = append(line, board[i][j])
 			}
 
 			if amountOfEmptyPieces(line) == 10 {
@@ -113,15 +127,15 @@ func checkLineCleared() {
 
 		resetBoard()
 
-		for j := 0; j < len(Board[0]); j++ {
+		for j := 0; j < len(board[0]); j++ {
 			// line := []piece{}
-			offset := len(Board[0]) - len(aPieces)
+			offset := len(board[0]) - len(aPieces)
 			if offset < j {
 				continue
 			}
 			for b, c := range aPieces {
 				for pi, pc := range c {
-					Board[pi][b+offset] = pc
+					board[pi][b+offset] = pc
 				}
 			}
 		}
@@ -138,120 +152,188 @@ func amountOfEmptyPieces(a []piece) (r int) {
 }
 
 func resetBoard() {
-	for b, c := range Board {
+	for b, c := range board {
 		for d := range c {
-			Board[b][d].id = 0
+			board[b][d].id = 0
 		}
 	}
 }
 
 func colorBoard() {
-	for j := 0; j < len(Board[0]); j++ {
-		for i := 0; i < len(Board); i++ {
+	for j := 0; j < len(board[0]); j++ {
+		for i := 0; i < len(board); i++ {
 			if rand.Int()%10 == 0 {
-				Board[i][j].id = 0
+				board[i][j].id = 0
 				continue
 			}
 
-			Board[i][j].id = rand.Intn(250)
+			board[i][j].id = rand.Intn(250)
 		}
 	}
 }
 
 func movePieceDown() bool {
-	newBoard := Board
+	newBoard := board
 	for j := 19; j >= 0; j-- {
 		for i := 0; i < 10; i++ {
-			if Board[i][j].dropping {
-				if j+1 == 20 && Board[i][j].id != 0 {
-					return true
-				}
-				if !Board[i][j+1].dropping && Board[i][j+1].id != 0 {
+			if board[i][j].dropping {
+				if j == 19 || (j < 19 && !board[i][j+1].dropping && board[i][j+1].id != 0) {
 					return true
 				}
 				// move the dropping piece down one row
-				newBoard[i][j+1].id = Board[i][j].id
+				newBoard[i][j+1].id = board[i][j].id
 				newBoard[i][j+1].dropping = true
 				newBoard[i][j].id = 0
 				newBoard[i][j].dropping = false
 			}
 		}
 	}
-	Board = newBoard
+	dropInf.y--
+	board = newBoard
 	return false
 }
 
 func movePieceLeft() bool {
-	newBoard := Board
-	for j := 10; j < len(Board[0]); j++ {
-		for i := 0; i < len(Board); i++ {
-			if Board[i][j].dropping {
-				if !Board[i-1][j].dropping && Board[i-1][j].id != 0 {
+	newBoard := board
+	for i := 0; i < 10; i++ {
+		for j := 0; j < 20; j++ {
+			if board[i][j].dropping {
+				if i == 0 || (i-1 >= 0 && !board[i-1][j].dropping && board[i-1][j].id != 0) {
 					return true
 				}
-				newBoard[i][j] = Board[i][j]
+
+				// move the dropping piece left one column
+				newBoard[i-1][j].id = board[i][j].id
+				newBoard[i-1][j].dropping = true
+				newBoard[i][j].id = 0
+				newBoard[i][j].dropping = false
 			}
 		}
 	}
-	Board = newBoard
+	board = newBoard
+	dropInf.x--
 	return false
 }
 
 func movePieceRight() bool {
-	var newBoard = Board
-	for j := 10; j < len(Board[0]); j++ {
-		for i := 0; i < len(Board); i++ {
-			if Board[i][j].dropping {
-				if !Board[i-1][j].dropping && Board[i-1][j].id != 0 {
+	newBoard := board
+	for i := 9; i >= 0; i-- {
+		for j := 0; j < 20; j++ {
+			if board[i][j].dropping {
+				if i == 9 || (i+1 < 10 && !board[i+1][j].dropping && board[i+1][j].id != 0) {
 					return true
 				}
-				newBoard[i][j] = Board[i][j]
+
+				// move the dropping piece right one column
+				newBoard[i+1][j].id = board[i][j].id
+				newBoard[i+1][j].dropping = true
+				newBoard[i][j].id = 0
+				newBoard[i][j].dropping = false
 			}
 		}
 	}
-	Board = newBoard
+	board = newBoard
+	dropInf.x++
 	return false
 }
 
 func rotatePiece() {
-	// global.RotateMatrix(Board[dropInf.x : dropInf.w+dropInf.x][dropInf.y : dropInf.h+dropInf.y])
+	newBoard := board
+
+	rotated := pieces.RotateMatrix(getPiece(currentPiece))
+	for i := 0; i < rotations; i++ {
+		rotated = pieces.RotateMatrix(rotated)
+	}
+
+	for i, a := range newBoard {
+		for j := range a {
+			if newBoard[i][j].dropping {
+				newBoard[i][j].dropping = false
+				newBoard[i][j].id = 0
+			}
+		}
+	}
+
+	dropInf.w, dropInf.h = len(rotated), len(rotated[0])
+
+	for j := 0; j < dropInf.h; j++ {
+		for i := 0; i < dropInf.w; i++ {
+			if rotated[i][j] != 0 {
+				x, y := dropInf.x+i, 19-dropInf.y+j
+				if x < 0 || x >= 10 || y < 0 || y >= 20 || newBoard[x][y].id != 0 {
+					return
+				}
+			}
+		}
+	}
+
+	for j := 0; j < dropInf.h; j++ {
+		for i := 0; i < dropInf.w; i++ {
+			if rotated[i][j] != 0 {
+				x, y := dropInf.x+i, 19-dropInf.y+j
+				newBoard[x][y].id = rotated[i][j]
+				newBoard[x][y].dropping = true
+			}
+		}
+	}
+	board = newBoard
+	rotations++
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }
 
 func startDrop(tet [][]int) {
 	a := len(tet)
-	if a == 3 {
-		a -= 1
+	if a == 4 {
+		a = 2
+	} else if a == 2 {
+		a = 4
+	} else {
+		a = 3
 	}
-	a = a/2 + 2
 	for j := 0; j < len(tet[0]); j++ {
 		for i := 0; i < len(tet); i++ {
-			if Board[i+a][j].id != 0 {
+			if board[i+a][j].id != 0 {
 				dropped = true
-				global.CurrentMenu = global.DeathScreen
+				global.CurrentMenu = states.DeathScreen
 			}
-			Board[i+a][j].id = tet[i][j]
-			Board[i+a][j].dropping = true
+			board[i+a][j].id = tet[i][j]
+			board[i+a][j].dropping = true
 		}
 	}
-	DroppingPiece = true
+	for d, b := range board {
+		for c := range b {
+			if board[d][c].id == 0 && board[d][c].dropping {
+				board[d][c].dropping = false
+			}
+		}
+	}
+	dropInf.x = a
+	dropInf.y = 19
+	droppingPiece = true
 }
 
-func getRandomPiece() [][]int {
-	switch rand.Intn(7) {
+func getPiece(a int) [][]int {
+	switch a {
 	case 0:
-		return global.PieceI()
+		return pieces.PieceI()
 	case 1:
-		return global.PieceJ()
+		return pieces.PieceJ()
 	case 2:
-		return global.PieceL()
+		return pieces.PieceL()
 	case 3:
-		return global.PieceO()
+		return pieces.PieceO()
 	case 4:
-		return global.PieceS()
+		return pieces.PieceS()
 	case 5:
-		return global.PieceT()
+		return pieces.PieceT()
 	case 6:
-		return global.PieceZ()
+		return pieces.PieceZ()
 	}
 	panic("HUH")
 }

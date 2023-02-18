@@ -1,6 +1,9 @@
 package global
 
-import "github.com/veandco/go-sdl2/sdl"
+import (
+	"github.com/veandco/go-sdl2/sdl"
+	"thaYt/getris/states"
+)
 
 var (
 	Window   *sdl.Window
@@ -9,6 +12,6 @@ var (
 
 	FPS         float64
 	Vsync       int
-	CurrentMenu = TitleScreen
-	Running bool
+	CurrentMenu = states.TitleScreen
+	Running     bool
 )
