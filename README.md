@@ -6,7 +6,8 @@ currently in development, this does **not** fully work!
 
 the fonts are licensed under the OFL and were *not* made by me, though mostly everything else was and is licensed under MPL-2
 
-#### [downloads](github.com/thaYt/getris/releases)
+#### [downloads](https://github.com/thaYt/getris/releases)
+built only for linux atm
 
 ---
 
